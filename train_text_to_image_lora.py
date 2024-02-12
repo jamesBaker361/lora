@@ -186,21 +186,20 @@ def parse_args():
         help="The column of the dataset containing a caption or a list of captions.",
     )
     parser.add_argument(
-        "--validation_prompt", type=str, default=None, help="A prompt that is sampled during training for inference."
+        "--validation_prompt_list", type=str, default=None, nargs="*", help="A list of prompts that is sampled during training for inference."
     )
     parser.add_argument(
         "--num_validation_images",
         type=int,
-        default=4,
-        help="Number of images that should be generated during validation with `validation_prompt`.",
+        default=2,
+        help="Number of images that should be generated per prompt during validation",
     )
     parser.add_argument(
         "--validation_epochs",
         type=int,
         default=1,
         help=(
-            "Run fine-tuning validation every X epochs. The validation process consists of running the prompt"
-            " `args.validation_prompt` multiple times: `args.num_validation_images`."
+            "Run fine-tuning validation every X epochs."
         ),
     )
     parser.add_argument(
@@ -830,10 +829,9 @@ def main():
                 break
 
         if accelerator.is_main_process:
-            if args.validation_prompt is not None and epoch % args.validation_epochs == 0:
+            if args.validation_prompt_list is not None and epoch % args.validation_epochs == 0:
                 logger.info(
-                    f"Running validation... \n Generating {args.num_validation_images} images with prompt:"
-                    f" {args.validation_prompt}."
+                    f"Running validation... \n Generating {args.num_validation_images} images"
                 )
                 # create pipeline
                 pipeline = DiffusionPipeline.from_pretrained(
@@ -851,10 +849,13 @@ def main():
                 if args.seed is not None:
                     generator = generator.manual_seed(args.seed)
                 images = []
+                prompt_list=[]
                 for _ in range(args.num_validation_images):
-                    images.append(
-                        pipeline(args.validation_prompt, num_inference_steps=args.num_train_timesteps_per_image, generator=generator).images[0]
-                    )
+                    for prompt in args.validation_prompt_list:
+                        images.append(
+                            pipeline(prompt, num_inference_steps=args.num_train_timesteps_per_image, generator=generator).images[0]
+                        )
+                        prompt_list.append(prompt)
 
                 for tracker in accelerator.trackers:
                     if tracker.name == "tensorboard":
@@ -864,8 +865,8 @@ def main():
                         tracker.log(
                             {
                                 "validation": [
-                                    wandb.Image(image, caption=f"{i}: {args.validation_prompt}")
-                                    for i, image in enumerate(images)
+                                    wandb.Image(image, caption=f"{i}: {prompt}")
+                                    for i, (image,prompt) in enumerate(zip(images,prompt))
                                 ]
                             }
                         )
@@ -918,8 +919,11 @@ def main():
     if args.seed is not None:
         generator = generator.manual_seed(args.seed)
     images = []
+    prompt_list=[]
     for _ in range(args.num_validation_images):
-        images.append(pipeline(args.validation_prompt, num_inference_steps=args.num_train_timesteps_per_image, generator=generator).images[0])
+        for prompt in args.validation_prompt_list:
+            images.append(pipeline(prompt, num_inference_steps=args.num_train_timesteps_per_image, generator=generator).images[0])
+            prompt_list.append(prompt)
 
     if accelerator.is_main_process:
         for tracker in accelerator.trackers:
@@ -931,8 +935,8 @@ def main():
                     tracker.log(
                         {
                             "test": [
-                                wandb.Image(image, caption=f"{i}: {args.validation_prompt}")
-                                for i, image in enumerate(images)
+                                wandb.Image(image, caption=f"{i}: {prompt}")
+                                for i, (image,prompt) in enumerate(zip(images,prompt))
                             ]
                         }
                     )
