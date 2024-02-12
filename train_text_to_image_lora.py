@@ -135,7 +135,6 @@ def parse_args():
         "--pretrained_model_name_or_path",
         type=str,
         default=None,
-        required=True,
         help="Path to pretrained model or model identifier from huggingface.co/models.",
     )
     parser.add_argument(
@@ -868,7 +867,7 @@ def main():
                 images = []
                 for _ in range(args.num_validation_images):
                     images.append(
-                        pipeline(args.validation_prompt, num_inference_steps=30, generator=generator).images[0]
+                        pipeline(args.validation_prompt, num_inference_steps=args.num_train_timesteps_per_image, generator=generator).images[0]
                     )
 
                 for tracker in accelerator.trackers:
