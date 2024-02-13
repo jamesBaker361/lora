@@ -98,7 +98,8 @@ def save_model_card(repo_id: str,
                     dataset_name:str='', 
                     repo_folder:str=None,
                     epochs:int=1,
-                    num_train_timesteps:int=1000):
+                    num_train_timesteps:int=1000,
+                    wand_tracker_url="www.wandb.com"):
     img_str = ""
     for i, image in enumerate(images):
         image.save(os.path.join(repo_folder, f"image_{i}.png"))
@@ -122,6 +123,7 @@ def save_model_card(repo_id: str,
     These are LoRA adaption weights for {base_model}. The weights were fine-tuned on the {dataset_name} dataset. \n
     Training epochs = {epochs} \n
     num_train_timesteps = {num_train_timesteps} \n
+    url: {wand_tracker_url}
     You can find some example images in the following. \n
     {img_str}
     """
@@ -907,7 +909,8 @@ def main():
                 dataset_name=args.dataset_name,
                 repo_folder=args.output_dir,
                 epochs=args.num_train_epochs,
-                num_train_timesteps=noise_scheduler.config.num_train_timesteps
+                num_train_timesteps=noise_scheduler.config.num_train_timesteps,
+                wand_tracker_url=accelerator.get_tracker("wandb").run.get_url()
             )
             upload_folder(
                 repo_id=repo_id,
