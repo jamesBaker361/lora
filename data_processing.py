@@ -70,8 +70,8 @@ def FrameCapture(args):
         if second > args.start_second and count %args.frame_interval==0:
             color_converted = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             pil_image = Image.fromarray(color_converted)
-            tensor_image=PILToTensor()(pil_image)
-            tensor_image=tensor_image.to(device)
+            '''tensor_image=PILToTensor()(pil_image)
+            tensor_image=tensor_image.to(device)'''
             inputs = processor(pil_image, return_tensors="pt") #.to(device)
 
             out = model.generate(**inputs)
