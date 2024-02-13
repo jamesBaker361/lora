@@ -186,7 +186,7 @@ def parse_args():
         help="The column of the dataset containing a caption or a list of captions.",
     )
     parser.add_argument(
-        "--validation_prompt_list", type=str, default=None, nargs="*", help="A list of prompts that is sampled during training for inference."
+        "--validation_prompt_list", type=str, default=[], nargs="*", help="A list of prompts that is sampled during training for inference."
     )
     parser.add_argument(
         "--num_validation_images",
@@ -604,7 +604,7 @@ def main():
             transforms.CenterCrop(args.resolution) if args.center_crop else transforms.RandomCrop(args.resolution),
             transforms.RandomHorizontalFlip() if args.random_flip else transforms.Lambda(lambda x: x),
             transforms.ToTensor(),
-            #stransforms.Normalize([0.5], [0.5]),
+            transforms.Normalize([0.5], [0.5]),
         ]
     )
 
@@ -866,7 +866,7 @@ def main():
                             {
                                 "validation": [
                                     wandb.Image(image, caption=f"{i}: {prompt}")
-                                    for i, (image,prompt) in enumerate(zip(images,prompt))
+                                    for i, (image,prompt) in enumerate(zip(images,prompt_list))
                                 ]
                             }
                         )
