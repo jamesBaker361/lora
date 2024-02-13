@@ -214,7 +214,7 @@ def parse_args():
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="sd-model-finetuned-lora",
+        default="/scratch/jlb638/sd-model-finetuned-lora",
         help="The output directory where the model predictions and checkpoints will be written.",
     )
     parser.add_argument(
@@ -310,6 +310,9 @@ def parse_args():
             " https://pytorch.org/docs/stable/notes/cuda.html#tensorfloat-32-tf32-on-ampere-devices"
         ),
     )
+
+    parser.add_argument("--minimal_preprocess",default=False, action="store_true",help="whether to only resize image")
+
     parser.add_argument(
         "--dataloader_num_workers",
         type=int,
@@ -607,6 +610,16 @@ def main():
             transforms.Normalize([0.5], [0.5]),
         ]
     )
+
+    if args.minimal_preprocess:
+            train_transforms = transforms.Compose(
+            [
+                transforms.Resize(int(args.resolution), interpolation=transforms.InterpolationMode.BILINEAR),
+                transforms.RandomHorizontalFlip() if args.random_flip else transforms.Lambda(lambda x: x),
+                transforms.ToTensor()
+            ]
+        )
+
 
     def preprocess_train(examples):
         images = [image.convert("RGB") for image in examples[args.image_column]]
