@@ -10,6 +10,7 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 import argparse
 from datasets import Dataset
 from torchvision.transforms import PILToTensor
+from torchvision import transforms
 import torch
 
 parser = argparse.ArgumentParser(description="Simple example of a training script.")
@@ -18,6 +19,8 @@ parser.add_argument("--end_second",type=float,default=30.0)
 parser.add_argument("--frame_interval",type=int,default=100)
 parser.add_argument("--path",type=str,default="/scratch/jlb638/spider/intospiderverse.mp4")
 parser.add_argument("--dataset_name",type=str,default="jlbaker361/spider-test")
+parser.add_argument("--center_crop",default=False,action="store_true",)
+parser.add_argument("--resolution",type=int,default=512)
 
 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large",cache_dir=cache_dir)
 model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-large",cache_dir=cache_dir)
@@ -48,6 +51,14 @@ def FrameCapture(args):
     print(f"fps {fps}")
     print(f"seconds {length/fps}")
 
+    train_transforms = transforms.Compose(
+            [
+                transforms.Resize(int(args.resolution*1), interpolation=transforms.InterpolationMode.BILINEAR),
+                transforms.CenterCrop(args.resolution) if args.center_crop else transforms.RandomCrop(args.resolution),
+            ]
+        )
+
+
     # Used as counter variable 
     count = 0
     # checks whether frames were extracted 
@@ -70,6 +81,7 @@ def FrameCapture(args):
         if second > args.start_second and count %args.frame_interval==0:
             color_converted = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             pil_image = Image.fromarray(color_converted)
+            pil_image=train_transforms(pil_image)
             '''tensor_image=PILToTensor()(pil_image)
             tensor_image=tensor_image.to(device)'''
             inputs = processor(pil_image, return_tensors="pt") #.to(device)
