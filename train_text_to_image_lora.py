@@ -314,6 +314,7 @@ def parse_args():
     )
 
     parser.add_argument("--minimal_preprocess",default=False, action="store_true",help="whether to only resize image")
+    parser.add_argument("--unconditional",default=False,action="store_true",help="whether to make all text an empty string")
 
     parser.add_argument(
         "--dataloader_num_workers",
@@ -588,7 +589,9 @@ def main():
     def tokenize_captions(examples, is_train=True):
         captions = []
         for caption in examples[args.caption_column]:
-            if isinstance(caption, str):
+            if args.unconditional:
+                captions.append(" ")
+            elif isinstance(caption, str):
                 captions.append(caption)
             elif isinstance(caption, (list, np.ndarray)):
                 # take a random caption if there are multiple
@@ -867,6 +870,7 @@ def main():
                 prompt_list=[]
                 for _ in range(args.num_validation_images):
                     for prompt in args.validation_prompt_list:
+                        prompt=prompt.replace("_"," ")
                         images.append(
                             pipeline(prompt, num_inference_steps=args.num_train_timesteps_per_image, generator=generator).images[0]
                         )
@@ -952,7 +956,7 @@ def main():
                         {
                             "test": [
                                 wandb.Image(image, caption=f"{i}: {prompt}")
-                                for i, (image,prompt) in enumerate(zip(images,prompt))
+                                for i, (image,prompt) in enumerate(zip(images,prompt_list))
                             ]
                         }
                     )
