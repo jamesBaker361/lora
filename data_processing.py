@@ -99,10 +99,11 @@ def FrameCapture(args):
                 out = model.generate(**inputs)
                 caption=processor.decode(out[0], skip_special_tokens=True)
                 print(f"count: {count}")
-                src_dict[IMAGE_STR].append(pil_image)
-                src_dict[TEXT_STR].append(caption)
-                src_dict[FRAME_STR].append(count)
-                src_dict[TITLE_STR].append(mp4_file)
+                if caption.find("batman")==-1:
+                    src_dict[IMAGE_STR].append(pil_image)
+                    src_dict[TEXT_STR].append(caption.replace("anime","").replace("cartoon",""))
+                    src_dict[FRAME_STR].append(count)
+                    src_dict[TITLE_STR].append(mp4_file)
             if second > args.end_second:
                 break
     return Dataset.from_dict(src_dict).push_to_hub(args.dataset_name)
